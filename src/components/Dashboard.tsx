@@ -40,7 +40,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="mobile-container p-6 animate-fade-in">
+    <div className="w-full p-6 animate-fade-in">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">Dashboard</h1>

@@ -15,7 +15,7 @@ const TabNavigation = ({ activeTab, onTabChange }: TabNavigationProps) => {
 
   return (
     <div className="bg-card border-t border-border">
-      <div className="mobile-container">
+      <div className="w-full max-w-sm mx-auto">
         <div className="flex items-center justify-around py-2">
           {tabs.map((tab) => (
             <button

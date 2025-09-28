@@ -41,17 +41,19 @@ const App = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Conteúdo principal */}
-      <div className="flex-1 pb-20">
-        {renderContent()}
-      </div>
+      <main className="flex-1 pb-20 overflow-y-auto">
+        <div className="w-full max-w-sm mx-auto">
+          {renderContent()}
+        </div>
+      </main>
 
       {/* Navegação inferior fixa */}
-      <div className="fixed bottom-0 left-0 right-0">
+      <nav className="fixed bottom-0 left-0 right-0 z-50">
         <TabNavigation 
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />
-      </div>
+      </nav>
     </div>
   );
 };

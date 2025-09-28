@@ -17,7 +17,7 @@ const HistoryScreen = () => {
   const maxWaterLevel = Math.max(...chartData.map(d => d.waterLevel));
 
   return (
-    <div className="mobile-container p-6 animate-fade-in">
+    <div className="w-full p-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

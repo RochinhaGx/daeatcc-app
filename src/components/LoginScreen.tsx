@@ -5,7 +5,7 @@ import esp32Image from "@/assets/esp32-hero.jpg";
 
 const LoginScreen = () => {
   return (
-    <div className="mobile-container animate-fade-in">
+    <div className="w-full p-4 animate-fade-in">
       {/* Header com logo */}
       <div className="text-center pt-12 pb-8">
         <div className="flex items-center justify-center mb-4">

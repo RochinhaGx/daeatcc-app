@@ -103,9 +103,10 @@ All colors MUST be HSL.
 
   /* Card DAEA */
   .card-daea {
-    @apply bg-card rounded-xl p-6;
+    @apply bg-card rounded-xl p-6 border border-border/50;
     @apply shadow-[var(--shadow-card)] hover:shadow-lg;
     @apply transition-all duration-200 hover:-translate-y-1;
+    @apply relative z-10;
   }
 
   /* Status Indicators */
@@ -119,7 +120,8 @@ All colors MUST be HSL.
 
   /* Mobile Container */
   .mobile-container {
-    @apply max-w-sm mx-auto bg-background min-h-screen;
+    @apply w-full max-w-sm mx-auto bg-background min-h-screen relative;
+    @apply px-4 py-0;
   }
 
   /* Tab Navigation */
