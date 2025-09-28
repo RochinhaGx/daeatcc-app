@@ -10,8 +10,28 @@ import {
   ChevronRight,
   Settings as SettingsIcon
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const ConfigScreen = () => {
+  const { signOut, user } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao sair",
+        description: "Ocorreu um erro ao tentar sair do sistema",
+        variant: "destructive"
+      });
+    }
+  };
   const settingsOptions = [
     {
       id: "profile",
@@ -58,8 +78,8 @@ const ConfigScreen = () => {
             <User className="h-6 w-6 text-primary-foreground" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold">Admin DAEA</h3>
-            <p className="text-sm text-muted-foreground">Sistema ativo há 3 dias</p>
+            <h3 className="font-semibold">{user?.email}</h3>
+            <p className="text-sm text-muted-foreground">Sistema ativo</p>
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </div>
@@ -111,7 +131,11 @@ const ConfigScreen = () => {
           Ajuda e Suporte
         </Button>
         
-        <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+        <Button 
+          variant="outline" 
+          className="w-full justify-start text-red-600 hover:text-red-700"
+          onClick={handleLogout}
+        >
           <LogOut className="h-4 w-4 mr-3" />
           Sair do Sistema
         </Button>
