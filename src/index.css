@@ -126,9 +126,23 @@ All colors MUST be HSL.
   .tab-item {
     @apply flex flex-col items-center justify-center py-3 px-4 text-muted-foreground;
     @apply transition-colors duration-200 hover:text-primary;
+    @apply cursor-pointer select-none;
   }
 
   .tab-item.active {
-    @apply text-primary;
+    @apply text-primary bg-primary/10;
+  }
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.4s ease-out;
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
