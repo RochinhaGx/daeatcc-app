@@ -14,7 +14,130 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      devices: {
+        Row: {
+          created_at: string
+          id: string
+          location: string | null
+          name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location?: string | null
+          name?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location?: string | null
+          name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sensor_data: {
+        Row: {
+          device_id: string
+          evaporation_rate: number | null
+          humidity: number | null
+          id: string
+          temperature: number | null
+          timestamp: string
+          user_id: string
+          water_level: number | null
+        }
+        Insert: {
+          device_id: string
+          evaporation_rate?: number | null
+          humidity?: number | null
+          id?: string
+          temperature?: number | null
+          timestamp?: string
+          user_id: string
+          water_level?: number | null
+        }
+        Update: {
+          device_id?: string
+          evaporation_rate?: number | null
+          humidity?: number | null
+          id?: string
+          temperature?: number | null
+          timestamp?: string
+          user_id?: string
+          water_level?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sensor_data_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_config: {
+        Row: {
+          auto_evaporation: boolean | null
+          created_at: string
+          device_id: string
+          humidity_alert_max: number | null
+          humidity_alert_min: number | null
+          id: string
+          notification_enabled: boolean | null
+          temperature_alert_max: number | null
+          temperature_alert_min: number | null
+          updated_at: string
+          user_id: string
+          water_level_alert: number | null
+        }
+        Insert: {
+          auto_evaporation?: boolean | null
+          created_at?: string
+          device_id: string
+          humidity_alert_max?: number | null
+          humidity_alert_min?: number | null
+          id?: string
+          notification_enabled?: boolean | null
+          temperature_alert_max?: number | null
+          temperature_alert_min?: number | null
+          updated_at?: string
+          user_id: string
+          water_level_alert?: number | null
+        }
+        Update: {
+          auto_evaporation?: boolean | null
+          created_at?: string
+          device_id?: string
+          humidity_alert_max?: number | null
+          humidity_alert_min?: number | null
+          id?: string
+          notification_enabled?: boolean | null
+          temperature_alert_max?: number | null
+          temperature_alert_min?: number | null
+          updated_at?: string
+          user_id?: string
+          water_level_alert?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_config_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

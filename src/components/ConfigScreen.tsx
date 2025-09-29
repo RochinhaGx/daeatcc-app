@@ -1,151 +1,270 @@
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { 
-  User, 
-  Bell, 
-  Wifi, 
-  Shield, 
-  HelpCircle, 
-  LogOut,
-  ChevronRight,
-  Settings as SettingsIcon
-} from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import React, { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { Settings, Bell, Thermometer, Droplets, Gauge, LogOut, Save, RotateCcw, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useDevices } from '@/hooks/useDevices';
+import { useSystemConfig } from '@/hooks/useSystemConfig';
+import { useToast } from '@/hooks/use-toast';
 
 const ConfigScreen = () => {
-  const { signOut, user } = useAuth();
+  const { signOut } = useAuth();
+  const { devices } = useDevices();
+  const [currentDevice, setCurrentDevice] = useState<any>(null);
+  const { config, loading, createConfig, updateConfig, resetToDefaults } = useSystemConfig(currentDevice?.id);
   const { toast } = useToast();
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      toast({
-        title: "Logout realizado",
-        description: "Você foi desconectado com sucesso",
+  // Local state for form values
+  const [formData, setFormData] = useState({
+    temperature_alert_min: 15.0,
+    temperature_alert_max: 35.0,
+    humidity_alert_min: 30.0,
+    humidity_alert_max: 90.0,
+    water_level_alert: 50.0,
+    auto_evaporation: true,
+    notification_enabled: true,
+  });
+
+  useEffect(() => {
+    if (devices.length > 0) {
+      setCurrentDevice(devices[0]);
+    }
+  }, [devices]);
+
+  useEffect(() => {
+    if (config) {
+      setFormData({
+        temperature_alert_min: config.temperature_alert_min,
+        temperature_alert_max: config.temperature_alert_max,
+        humidity_alert_min: config.humidity_alert_min,
+        humidity_alert_max: config.humidity_alert_max,
+        water_level_alert: config.water_level_alert,
+        auto_evaporation: config.auto_evaporation,
+        notification_enabled: config.notification_enabled,
       });
-    } catch (error) {
+    }
+  }, [config]);
+
+  const handleLogout = async () => {
+    await signOut();
+  };
+
+  const handleSave = async () => {
+    if (!currentDevice) {
       toast({
-        title: "Erro ao sair",
-        description: "Ocorreu um erro ao tentar sair do sistema",
+        title: "Erro",
+        description: "Nenhum dispositivo selecionado",
         variant: "destructive"
       });
+      return;
+    }
+
+    if (!config) {
+      // Create new config
+      await createConfig(currentDevice.id, formData);
+    } else {
+      // Update existing config
+      await updateConfig(formData);
     }
   };
-  const settingsOptions = [
-    {
-      id: "profile",
-      name: "Perfil do Usuário",
-      description: "Gerenciar conta e preferências",
-      icon: User,
-      color: "text-blue-500"
-    },
-    {
-      id: "notifications",
-      name: "Notificações",
-      description: "Alertas e avisos do sistema",
-      icon: Bell,
-      color: "text-green-500"
-    },
-    {
-      id: "network",
-      name: "Conexão",
-      description: "WiFi e configurações de rede",
-      icon: Wifi,
-      color: "text-purple-500"
-    },
-    {
-      id: "security",
-      name: "Segurança",
-      description: "Senha e autenticação",
-      icon: Shield,
-      color: "text-red-500"
+
+  const handleReset = async () => {
+    if (!config) {
+      // Reset form to defaults
+      setFormData({
+        temperature_alert_min: 15.0,
+        temperature_alert_max: 35.0,
+        humidity_alert_min: 30.0,
+        humidity_alert_max: 90.0,
+        water_level_alert: 50.0,
+        auto_evaporation: true,
+        notification_enabled: true,
+      });
+    } else {
+      await resetToDefaults();
     }
-  ];
+  };
+
+  const handleInputChange = (field: string, value: number | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full p-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-6">
+      <div className="text-center">
         <h1 className="text-2xl font-bold mb-2">Configurações</h1>
-        <p className="text-muted-foreground">Gerencie seu sistema DAEA</p>
+        <p className="text-muted-foreground">Ajustes do sistema DAEA</p>
+        {currentDevice && (
+          <p className="text-sm text-muted-foreground mt-1">{currentDevice.name}</p>
+        )}
       </div>
 
-      {/* Perfil do usuário */}
-      <Card className="card-daea mb-6">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-            <User className="h-6 w-6 text-primary-foreground" />
+      {/* Device Settings */}
+      <Card className="card-daea">
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Settings className="h-5 w-5 text-muted-foreground" />
+            <h3 className="text-lg font-medium">Configurações do Dispositivo</h3>
           </div>
-          <div className="flex-1">
-            <h3 className="font-semibold">{user?.email}</h3>
-            <p className="text-sm text-muted-foreground">Sistema ativo</p>
-          </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-        </div>
-      </Card>
-
-      {/* Opções de configuração */}
-      <div className="space-y-4 mb-6">
-        {settingsOptions.map((option) => (
-          <Card key={option.id} className="card-daea cursor-pointer hover:shadow-lg">
+          
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className={`p-2 rounded-lg bg-secondary/50 ${option.color}`}>
-                  <option.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-medium">{option.name}</h3>
-                  <p className="text-sm text-muted-foreground">{option.description}</p>
-                </div>
+              <div>
+                <Label htmlFor="auto-mode">Evaporação Automática</Label>
+                <p className="text-sm text-muted-foreground">Ativa o sistema automaticamente quando necessário</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <Switch 
+                id="auto-mode" 
+                checked={formData.auto_evaporation}
+                onCheckedChange={(checked) => handleInputChange('auto_evaporation', checked)}
+              />
             </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* Status do sistema */}
-      <Card className="card-daea mb-6">
-        <h3 className="text-lg font-semibold mb-4">Sistema</h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Versão do App</span>
-            <span className="font-medium">1.2.0</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Firmware ESP32</span>
-            <span className="font-medium">2.1.3</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Última Sync</span>
-            <span className="font-medium">Agora</span>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="notifications">Notificações</Label>
+                <p className="text-sm text-muted-foreground">Receba alertas sobre o sistema</p>
+              </div>
+              <Switch 
+                id="notifications" 
+                checked={formData.notification_enabled}
+                onCheckedChange={(checked) => handleInputChange('notification_enabled', checked)}
+              />
+            </div>
           </div>
         </div>
       </Card>
 
-      {/* Ações rápidas */}
-      <div className="space-y-3">
-        <Button variant="outline" className="w-full justify-start">
-          <HelpCircle className="h-4 w-4 mr-3" />
-          Ajuda e Suporte
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          className="w-full justify-start text-red-600 hover:text-red-700"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4 mr-3" />
-          Sair do Sistema
-        </Button>
-      </div>
+      {/* Alert Thresholds */}
+      <Card className="card-daea">
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Bell className="h-5 w-5 text-muted-foreground" />
+            <h3 className="text-lg font-medium">Limites de Alerta</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Thermometer className="h-4 w-4 text-blue-500" />
+                <Label>Temperatura (°C)</Label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input 
+                  type="number"
+                  placeholder="Min"
+                  value={formData.temperature_alert_min}
+                  onChange={(e) => handleInputChange('temperature_alert_min', parseFloat(e.target.value) || 0)}
+                />
+                <Input 
+                  type="number"
+                  placeholder="Max"
+                  value={formData.temperature_alert_max}
+                  onChange={(e) => handleInputChange('temperature_alert_max', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+            </div>
 
-      {/* Footer */}
-      <div className="pt-8 text-center">
-        <p className="text-xs text-muted-foreground">
-          DAEA © 2024 • Tecnologia contra enchentes
-        </p>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Droplets className="h-4 w-4 text-cyan-500" />
+                <Label>Umidade (%)</Label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input 
+                  type="number"
+                  placeholder="Min"
+                  value={formData.humidity_alert_min}
+                  onChange={(e) => handleInputChange('humidity_alert_min', parseFloat(e.target.value) || 0)}
+                />
+                <Input 
+                  type="number"
+                  placeholder="Max"
+                  value={formData.humidity_alert_max}
+                  onChange={(e) => handleInputChange('humidity_alert_max', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Gauge className="h-4 w-4 text-green-500" />
+                <Label>Nível da Água - Alerta (cm)</Label>
+              </div>
+              <Input 
+                type="number"
+                placeholder="Nível de alerta"
+                value={formData.water_level_alert}
+                onChange={(e) => handleInputChange('water_level_alert', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* System Actions */}
+      <Card className="card-daea">
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Ações do Sistema</h3>
+          
+          <div className="grid grid-cols-1 gap-3">
+            <Button onClick={handleSave} className="btn-daea">
+              <Save className="mr-2 h-4 w-4" />
+              Salvar Configurações
+            </Button>
+            
+            <Button variant="outline" onClick={handleReset}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Restaurar Padrões
+            </Button>
+            
+            <Button variant="outline" disabled>
+              <Settings className="mr-2 h-4 w-4" />
+              Calibrar Sensores
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Device Info */}
+      {currentDevice && (
+        <Card className="card-daea">
+          <div className="space-y-2">
+            <h3 className="text-lg font-medium">Informações do Dispositivo</h3>
+            <div className="text-sm space-y-1">
+              <p><span className="font-medium">Nome:</span> {currentDevice.name}</p>
+              <p><span className="font-medium">Status:</span> {currentDevice.status === 'ligado' ? 'Ligado' : 'Desligado'}</p>
+              <p><span className="font-medium">Localização:</span> {currentDevice.location || 'Não definida'}</p>
+              <p><span className="font-medium">Criado em:</span> {new Date(currentDevice.created_at).toLocaleDateString('pt-BR')}</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      <Separator />
+
+      {/* Logout */}
+      <div className="flex justify-center">
+        <Button variant="destructive" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair da Conta
+        </Button>
       </div>
     </div>
   );

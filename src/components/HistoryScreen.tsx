@@ -1,159 +1,213 @@
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Calendar, TrendingUp, Filter, Download } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Clock, Thermometer, Droplets, Gauge, Download, Zap, RefreshCw } from 'lucide-react';
+import { useSensorData } from '@/hooks/useSensorData';
+import { useDevices } from '@/hooks/useDevices';
+import { useToast } from '@/hooks/use-toast';
 
 const HistoryScreen = () => {
-  // Dados simulados para o gráfico
-  const chartData = [
-    { time: "00:00", humidity: 45, waterLevel: 0.8 },
-    { time: "04:00", humidity: 52, waterLevel: 1.2 },
-    { time: "08:00", humidity: 48, waterLevel: 0.9 },
-    { time: "12:00", humidity: 65, waterLevel: 2.3 },
-    { time: "16:00", humidity: 58, waterLevel: 1.8 },
-    { time: "20:00", humidity: 62, waterLevel: 2.1 },
-  ];
+  const { devices } = useDevices();
+  const [currentDevice, setCurrentDevice] = useState<any>(null);
+  const { sensorData, loading, refetch } = useSensorData(currentDevice?.id);
+  const { toast } = useToast();
 
-  const maxHumidity = Math.max(...chartData.map(d => d.humidity));
-  const maxWaterLevel = Math.max(...chartData.map(d => d.waterLevel));
+  useEffect(() => {
+    if (devices.length > 0) {
+      setCurrentDevice(devices[0]);
+    }
+  }, [devices]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusBadge = (data: any) => {
+    if (!data.temperature || !data.humidity || !data.water_level) {
+      return { variant: 'outline' as const, text: 'Incompleto' };
+    }
+
+    // Check for alerts based on typical ranges
+    const tempOutOfRange = data.temperature < 15 || data.temperature > 35;
+    const humidityOutOfRange = data.humidity < 30 || data.humidity > 90;
+    const waterLevelHigh = data.water_level > 80;
+
+    if (tempOutOfRange || humidityOutOfRange || waterLevelHigh) {
+      return { variant: 'destructive' as const, text: 'Alerta' };
+    }
+
+    return { variant: 'default' as const, text: 'Normal' };
+  };
+
+  const handleExportData = () => {
+    if (sensorData.length === 0) {
+      toast({
+        title: "Sem Dados",
+        description: "Não há dados para exportar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Convert data to CSV format
+    const headers = ['Data/Hora', 'Temperatura (°C)', 'Umidade (%)', 'Nível Água (cm)', 'Taxa Evaporação (mm/h)', 'Status'];
+    const csvData = [
+      headers.join(','),
+      ...sensorData.map(data => {
+        const status = getStatusBadge(data);
+        return [
+          formatDate(data.timestamp),
+          data.temperature || '--',
+          data.humidity || '--',
+          data.water_level || '--',
+          data.evaporation_rate || '--',
+          status.text
+        ].join(',');
+      })
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `daea_historico_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Dados Exportados",
+      description: "Arquivo CSV foi baixado com sucesso",
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full p-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Histórico</h1>
-          <p className="text-muted-foreground">Dados dos sensores</p>
-        </div>
-        <Button variant="outline" size="sm">
-          <Filter className="h-4 w-4 mr-2" />
-          Filtros
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-2">Histórico de Sensores</h1>
+        <p className="text-muted-foreground">Dados coletados do sistema DAEA</p>
+        {currentDevice && (
+          <p className="text-sm text-muted-foreground mt-1">{currentDevice.name}</p>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-between">
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Atualizar
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleExportData}
+          disabled={sensorData.length === 0}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          Exportar Dados
         </Button>
       </div>
 
-      {/* Seletor de período */}
-      <Card className="card-daea mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Período</h3>
-          <Calendar className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Button variant="outline" size="sm" className="text-xs">24h</Button>
-          <Button className="text-xs">7 dias</Button>
-          <Button variant="outline" size="sm" className="text-xs">30 dias</Button>
-        </div>
-      </Card>
+      {/* History List */}
+      <div className="space-y-4">
+        {sensorData.map((data) => {
+          const status = getStatusBadge(data);
+          return (
+            <Card key={data.id} className="card-daea">
+              <div className="space-y-4">
+                {/* Timestamp and Status */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{formatDate(data.timestamp)}</span>
+                  </div>
+                  <Badge variant={status.variant} className="text-xs">
+                    {status.text}
+                  </Badge>
+                </div>
 
-      {/* Gráfico simulado */}
-      <Card className="card-daea mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Evolução dos Sensores</h3>
-          <TrendingUp className="h-5 w-5 text-primary" />
-        </div>
-        
-        {/* Legenda */}
-        <div className="flex items-center space-x-4 mb-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-            <span className="text-muted-foreground">Umidade (%)</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-primary rounded-full"></div>
-            <span className="text-muted-foreground">Nível Água (cm)</span>
-          </div>
-        </div>
+                {/* Sensor Readings */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Thermometer className="h-4 w-4 text-blue-500" />
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Temp</p>
+                      <p className="text-sm font-bold">
+                        {data.temperature ? `${data.temperature}°C` : '--'}
+                      </p>
+                    </div>
+                  </div>
 
-        {/* Gráfico SVG simplificado */}
-        <div className="h-48 bg-muted/20 rounded-lg p-4 relative">
-          <svg viewBox="0 0 400 140" className="w-full h-full">
-            {/* Grid lines */}
-            {[0, 1, 2, 3, 4].map(i => (
-              <line
-                key={i}
-                x1="0"
-                y1={i * 35}
-                x2="400"
-                y2={i * 35}
-                stroke="hsl(var(--border))"
-                strokeWidth="1"
-                opacity="0.3"
-              />
-            ))}
-            
-            {/* Linha de umidade */}
-            <path
-              d={`M ${chartData.map((d, i) => 
-                `${(i / (chartData.length - 1)) * 360 + 20},${140 - (d.humidity / maxHumidity) * 120}`
-              ).join(' L ')}`}
-              stroke="rgb(59, 130, 246)"
-              strokeWidth="2"
-              fill="none"
-            />
-            
-            {/* Linha de nível da água */}
-            <path
-              d={`M ${chartData.map((d, i) => 
-                `${(i / (chartData.length - 1)) * 360 + 20},${140 - (d.waterLevel / maxWaterLevel) * 120}`
-              ).join(' L ')}`}
-              stroke="hsl(var(--primary))"
-              strokeWidth="2"
-              fill="none"
-            />
-            
-            {/* Pontos */}
-            {chartData.map((d, i) => (
-              <g key={i}>
-                <circle
-                  cx={(i / (chartData.length - 1)) * 360 + 20}
-                  cy={140 - (d.humidity / maxHumidity) * 120}
-                  r="3"
-                  fill="rgb(59, 130, 246)"
-                />
-                <circle
-                  cx={(i / (chartData.length - 1)) * 360 + 20}
-                  cy={140 - (d.waterLevel / maxWaterLevel) * 120}
-                  r="3"
-                  fill="hsl(var(--primary))"
-                />
-              </g>
-            ))}
-          </svg>
-          
-          {/* Eixo X */}
-          <div className="flex justify-between text-xs text-muted-foreground mt-2">
-            {chartData.map((d, i) => (
-              <span key={i}>{d.time}</span>
-            ))}
-          </div>
-        </div>
-      </Card>
+                  <div className="flex items-center space-x-2">
+                    <Droplets className="h-4 w-4 text-cyan-500" />
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Umidade</p>
+                      <p className="text-sm font-bold">
+                        {data.humidity ? `${data.humidity}%` : '--'}
+                      </p>
+                    </div>
+                  </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <Card className="card-daea text-center">
-          <p className="text-2xl font-bold text-blue-500">65%</p>
-          <p className="text-sm text-muted-foreground">Umidade Máx</p>
-          <p className="text-xs text-muted-foreground">Hoje</p>
-        </Card>
-        <Card className="card-daea text-center">
-          <p className="text-2xl font-bold text-primary">2.3cm</p>
-          <p className="text-sm text-muted-foreground">Água Máx</p>
-          <p className="text-xs text-muted-foreground">Hoje</p>
-        </Card>
+                  <div className="flex items-center space-x-2">
+                    <Gauge className="h-4 w-4 text-green-500" />
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Nível</p>
+                      <p className="text-sm font-bold">
+                        {data.water_level ? `${data.water_level}cm` : '--'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Zap className="h-4 w-4 text-purple-500" />
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Evaporação</p>
+                      <p className="text-sm font-bold">
+                        {data.evaporation_rate ? `${data.evaporation_rate}mm/h` : '--'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
-      {/* Exportar dados */}
-      <Card className="card-daea">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold">Exportar Relatório</h3>
-            <p className="text-sm text-muted-foreground">Baixar dados do período</p>
+      {/* Empty State */}
+      {sensorData.length === 0 && (
+        <Card className="card-daea">
+          <div className="text-center py-8">
+            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">Nenhum histórico encontrado</h3>
+            <p className="text-muted-foreground mb-4">
+              Os dados dos sensores aparecerão aqui conforme forem coletados
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Ligue o sistema e use "Simular Leitura" no Dashboard para gerar dados de teste
+            </p>
           </div>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            CSV
-          </Button>
-        </div>
-      </Card>
+        </Card>
+      )}
     </div>
   );
 };
