@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import LoginScreen from "@/components/LoginScreen";
+import HomeScreen from "@/components/HomeScreen";
 import Dashboard from "@/components/Dashboard";
 import HistoryScreen from "@/components/HistoryScreen";
 import ConfigScreen from "@/components/ConfigScreen";
@@ -53,6 +54,7 @@ const App = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "home":
+        return <HomeScreen onNavigate={setActiveTab} />;
       case "sensors":
         return <Dashboard />;
       case "history":
@@ -60,26 +62,26 @@ const App = () => {
       case "settings":
         return <ConfigScreen />;
       default:
-        return <Dashboard />;
+        return <HomeScreen onNavigate={setActiveTab} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Conteúdo principal */}
-      <main className="flex-1 pb-20 overflow-y-auto">
-        <div className="w-full max-w-sm mx-auto">
+    <div className="min-h-screen flex flex-col">
+      <div className="mobile-container">
+        {/* Conteúdo principal */}
+        <main className="flex-1 pb-20 overflow-y-auto">
           {renderContent()}
-        </div>
-      </main>
+        </main>
 
-      {/* Navegação inferior fixa */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50">
-        <TabNavigation 
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-      </nav>
+        {/* Navegação inferior fixa */}
+        <nav className="fixed bottom-0 left-0 right-0 z-50">
+          <TabNavigation 
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        </nav>
+      </div>
     </div>
   );
 };

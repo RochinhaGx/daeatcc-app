@@ -73,11 +73,11 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold mb-2">DAEA - Dashboard</h1>
-        <p className="text-muted-foreground">Sistema de Monitoramento Inteligente</p>
+        <h1 className="text-2xl font-bold mb-2">Painel de Sensores</h1>
+        <p className="text-muted-foreground">Monitoramento em Tempo Real</p>
         {currentDevice && (
           <p className="text-sm text-muted-foreground mt-1">{currentDevice.name}</p>
         )}

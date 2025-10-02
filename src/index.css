@@ -8,50 +8,59 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* DAEA Design System - Tons claros de azul e cinza */
-    --background: 210 25% 98%; /* #F8FAFC */
-    --foreground: 215 25% 15%; /* #1E293B */
+    /* DAEA Design System - Moderno e vibrante */
+    --background: 220 25% 96%;
+    --foreground: 220 15% 12%;
 
-    --card: 0 0% 100%; /* Branco puro para cards */
-    --card-foreground: 215 25% 15%; /* #1E293B */
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 220 15% 12%;
 
-    /* Azul forte para destaque - #3B82F6 */
-    --primary: 213 94% 68%; 
+    /* Azul vibrante para destaque */
+    --primary: 213 94% 58%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 213 94% 68%;
 
-    /* Cinza claro para elementos secundários */
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 215 25% 15%;
+    /* Verde para sucesso */
+    --success: 142 76% 45%;
+    --success-foreground: 0 0% 100%;
 
-    /* Tons de cinza para elementos muted */
-    --muted: 214 32% 91%;
-    --muted-foreground: 215 16% 47%; /* #64748B */
-
-    --accent: 213 94% 68%;
+    /* Roxo para accent */
+    --accent: 263 70% 55%;
     --accent-foreground: 0 0% 100%;
+
+    /* Cinza moderno */
+    --secondary: 220 15% 94%;
+    --secondary-foreground: 220 15% 12%;
+
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 46%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 213 94% 68%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 213 94% 58%;
 
-    --radius: 0.75rem; /* Cantos mais arredondados */
+    --radius: 1rem;
 
-    /* Gradientes para efeitos especiais */
-    --gradient-primary: linear-gradient(135deg, 213 94% 68%, 213 94% 78%);
-    --gradient-card: linear-gradient(145deg, 0 0% 100%, 210 25% 97%);
+    /* Gradientes modernos */
+    --gradient-primary: linear-gradient(135deg, hsl(213, 94%, 58%) 0%, hsl(263, 70%, 55%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0, 0%, 100%) 0%, hsl(220, 25%, 98%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(220, 25%, 96%) 0%, hsl(213, 94%, 98%) 100%);
     
-    /* Sombras suaves */
-    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-button: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    /* Sombras modernas */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --shadow-button: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
 
-    /* Transições suaves */
-    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Transições */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 
   .dark {
@@ -88,63 +97,167 @@ All colors MUST be HSL.
 }
 
 @layer components {
-  /* Botão DAEA - Estilo Principal */
+  /* Botões DAEA */
   .btn-daea {
-    @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium;
-    @apply hover:bg-primary/90 transition-all duration-200;
-    @apply shadow-[var(--shadow-button)] hover:shadow-lg;
+    @apply relative overflow-hidden;
+    @apply bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold;
+    @apply shadow-[var(--shadow-button)] hover:shadow-[var(--shadow-glow)];
+    @apply transition-all duration-300 hover:scale-105 active:scale-95;
+    background: var(--gradient-primary);
+  }
+
+  .btn-daea::before {
+    content: '';
+    @apply absolute inset-0 bg-white/20 translate-y-full;
+    @apply transition-transform duration-300;
+  }
+
+  .btn-daea:hover::before {
+    @apply translate-y-0;
   }
 
   .btn-daea-secondary {
-    @apply bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-medium;
+    @apply bg-secondary text-secondary-foreground px-6 py-3 rounded-xl font-medium;
     @apply hover:bg-secondary/80 transition-all duration-200;
-    @apply shadow-[var(--shadow-button)];
+    @apply shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-button)];
   }
 
-  /* Card DAEA */
+  /* Cards DAEA */
   .card-daea {
-    @apply bg-card rounded-xl p-6 border border-border/50;
-    @apply shadow-[var(--shadow-card)] hover:shadow-lg;
-    @apply transition-all duration-200 hover:-translate-y-1;
-    @apply relative z-10;
+    @apply bg-card rounded-2xl p-6 border border-border/30;
+    @apply shadow-[var(--shadow-card)];
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
+    @apply backdrop-blur-sm relative overflow-hidden;
+    background: var(--gradient-card);
+  }
+
+  .card-daea-highlight {
+    @apply card-daea border-primary/30;
+    @apply before:absolute before:inset-0 before:bg-gradient-to-br before:from-primary/5 before:to-transparent;
   }
 
   /* Status Indicators */
   .status-online {
     @apply bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium;
+    @apply flex items-center gap-1.5 animate-pulse-soft;
   }
 
   .status-offline {
     @apply bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium;
+    @apply flex items-center gap-1.5;
+  }
+
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .status-dot-online {
+    @apply bg-green-500 animate-pulse;
+  }
+
+  .status-dot-offline {
+    @apply bg-red-500;
   }
 
   /* Mobile Container */
   .mobile-container {
-    @apply w-full max-w-sm mx-auto bg-background min-h-screen relative;
-    @apply px-4 py-0;
+    @apply w-full max-w-sm mx-auto min-h-screen relative;
+    @apply px-4 py-6;
+    background: var(--gradient-hero);
   }
 
   /* Tab Navigation */
   .tab-item {
-    @apply flex flex-col items-center justify-center py-3 px-4 text-muted-foreground;
-    @apply transition-colors duration-200 hover:text-primary;
-    @apply cursor-pointer select-none;
+    @apply flex flex-col items-center justify-center gap-1 py-2 px-3;
+    @apply text-muted-foreground transition-all duration-300;
+    @apply cursor-pointer select-none rounded-xl;
   }
 
   .tab-item.active {
-    @apply text-primary bg-primary/10;
+    @apply text-primary bg-primary/10 scale-105;
+  }
+
+  .tab-item:hover:not(.active) {
+    @apply text-primary/70 bg-primary/5;
+  }
+
+  /* Sensor Reading Card */
+  .sensor-card {
+    @apply flex items-center gap-3 p-4 rounded-xl;
+    @apply bg-gradient-to-br from-white to-gray-50;
+    @apply border border-gray-100 shadow-sm;
+    @apply transition-all duration-300 hover:shadow-md hover:scale-[1.02];
   }
 
   /* Animations */
   .animate-fade-in {
-    animation: fade-in 0.3s ease-out;
+    animation: fade-in 0.5s ease-out;
   }
 
   .animate-slide-up {
-    animation: slide-up 0.4s ease-out;
+    animation: slide-up 0.5s ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.4s ease-out;
   }
 
   .animate-pulse-soft {
     animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-bounce-soft {
+    animation: bounce-soft 2s ease-in-out infinite;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes bounce-soft {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }

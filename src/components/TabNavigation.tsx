@@ -14,17 +14,17 @@ const TabNavigation = ({ activeTab, onTabChange }: TabNavigationProps) => {
   ];
 
   return (
-    <div className="bg-card border-t border-border">
+    <div className="bg-card/95 backdrop-blur-lg border-t border-border/50 shadow-2xl">
       <div className="w-full max-w-sm mx-auto">
-        <div className="flex items-center justify-around py-2">
+        <div className="flex items-center justify-around py-1 px-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={`tab-item ${activeTab === tab.id ? "active" : ""}`}
             >
-              <tab.icon className="h-5 w-5 mb-1" />
-              <span className="text-xs font-medium">{tab.name}</span>
+              <tab.icon className="h-5 w-5" />
+              <span className="text-[10px] font-medium">{tab.name}</span>
             </button>
           ))}
         </div>
