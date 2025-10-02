@@ -60,22 +60,22 @@ const HomeScreen = ({ onNavigate }: HomeScreenProps) => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Hero Section */}
-      <div className="relative rounded-2xl overflow-hidden shadow-xl h-48">
+      <div className="relative rounded-xl overflow-hidden shadow-md h-44">
         <img 
           src={heroImage} 
           alt="DAEA Sistema" 
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-          <h1 className="text-3xl font-bold mb-1">DAEA</h1>
-          <p className="text-sm text-white/90">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+          <h1 className="text-2xl font-bold mb-1">DAEA</h1>
+          <p className="text-xs text-white/90">
             Sistema de Monitoramento Automatizado de Evaporação de Água
           </p>
         </div>
         {isOnline && (
-          <div className="absolute top-4 right-4">
-            <div className="status-online">
+          <div className="absolute top-3 right-3">
+            <div className="status-online bg-white/90 text-green-700">
               <div className="status-dot-online" />
               Online
             </div>
@@ -85,34 +85,34 @@ const HomeScreen = ({ onNavigate }: HomeScreenProps) => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4 text-center border-none shadow-md bg-gradient-to-br from-blue-50 to-blue-100">
-          <Activity className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-          <p className="text-2xl font-bold text-blue-900">{totalReadings}</p>
-          <p className="text-xs text-blue-700">Leituras</p>
+        <Card className="p-4 text-center bg-card border-border shadow-sm">
+          <Activity className="h-5 w-5 text-primary mx-auto mb-2" />
+          <p className="text-xl font-bold text-foreground">{totalReadings}</p>
+          <p className="text-xs text-muted-foreground">Leituras</p>
         </Card>
         
-        <Card className="p-4 text-center border-none shadow-md bg-gradient-to-br from-cyan-50 to-cyan-100">
-          <Thermometer className="h-6 w-6 text-cyan-600 mx-auto mb-2" />
-          <p className="text-2xl font-bold text-cyan-900">{avgTemperature}°</p>
-          <p className="text-xs text-cyan-700">Média</p>
+        <Card className="p-4 text-center bg-card border-border shadow-sm">
+          <Thermometer className="h-5 w-5 text-blue-600 mx-auto mb-2" />
+          <p className="text-xl font-bold text-foreground">{avgTemperature}°</p>
+          <p className="text-xs text-muted-foreground">Média</p>
         </Card>
         
-        <Card className="p-4 text-center border-none shadow-md bg-gradient-to-br from-purple-50 to-purple-100">
-          <Droplets className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-          <p className="text-2xl font-bold text-purple-900">{avgHumidity}%</p>
-          <p className="text-xs text-purple-700">Umidade</p>
+        <Card className="p-4 text-center bg-card border-border shadow-sm">
+          <Droplets className="h-5 w-5 text-cyan-600 mx-auto mb-2" />
+          <p className="text-xl font-bold text-foreground">{avgHumidity}%</p>
+          <p className="text-xs text-muted-foreground">Umidade</p>
         </Card>
       </div>
 
       {/* Alerts Card */}
       {hasAlerts && (
-        <Card className="card-daea border-orange-200 bg-gradient-to-br from-orange-50 to-white animate-pulse-soft">
+        <Card className="card-daea border-orange-300 bg-orange-50/50">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-semibold text-orange-900 mb-1">Atenção aos Parâmetros</h3>
+              <h3 className="font-semibold text-orange-900 mb-1">Atenção</h3>
               <p className="text-sm text-orange-700 mb-3">
-                Alguns sensores estão fora dos limites configurados
+                Alguns parâmetros estão fora dos limites configurados
               </p>
               <Button 
                 size="sm" 
@@ -149,48 +149,48 @@ const HomeScreen = ({ onNavigate }: HomeScreenProps) => {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="sensor-card">
-              <div className="p-2 rounded-lg bg-blue-100">
-                <Thermometer className="h-5 w-5 text-blue-600" />
+              <div className="p-2 rounded-lg bg-blue-50">
+                <Thermometer className="h-4 w-4 text-blue-600" />
               </div>
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground">Temperatura</p>
-                <p className="text-xl font-bold text-foreground">
+                <p className="text-lg font-semibold text-foreground">
                   {latestData.temperature ? `${latestData.temperature}°C` : '--'}
                 </p>
               </div>
             </div>
 
             <div className="sensor-card">
-              <div className="p-2 rounded-lg bg-cyan-100">
-                <Droplets className="h-5 w-5 text-cyan-600" />
+              <div className="p-2 rounded-lg bg-cyan-50">
+                <Droplets className="h-4 w-4 text-cyan-600" />
               </div>
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground">Umidade</p>
-                <p className="text-xl font-bold text-foreground">
+                <p className="text-lg font-semibold text-foreground">
                   {latestData.humidity ? `${latestData.humidity}%` : '--'}
                 </p>
               </div>
             </div>
 
             <div className="sensor-card">
-              <div className="p-2 rounded-lg bg-green-100">
-                <Gauge className="h-5 w-5 text-green-600" />
+              <div className="p-2 rounded-lg bg-green-50">
+                <Gauge className="h-4 w-4 text-green-600" />
               </div>
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground">Nível Água</p>
-                <p className="text-xl font-bold text-foreground">
+                <p className="text-lg font-semibold text-foreground">
                   {latestData.water_level ? `${latestData.water_level}cm` : '--'}
                 </p>
               </div>
             </div>
 
             <div className="sensor-card">
-              <div className="p-2 rounded-lg bg-purple-100">
-                <Zap className="h-5 w-5 text-purple-600" />
+              <div className="p-2 rounded-lg bg-purple-50">
+                <Zap className="h-4 w-4 text-purple-600" />
               </div>
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground">Evaporação</p>
-                <p className="text-xl font-bold text-foreground">
+                <p className="text-lg font-semibold text-foreground">
                   {latestData.evaporation_rate ? `${latestData.evaporation_rate}mm/h` : '--'}
                 </p>
               </div>
