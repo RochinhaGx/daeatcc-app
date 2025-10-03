@@ -104,21 +104,23 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="flex items-center space-x-2">
-              <Waves className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">DAEA</h1>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Waves className="h-8 w-8 text-primary" />
+              </div>
+              <h1 className="text-4xl font-bold text-foreground">DAEA</h1>
             </div>
           </div>
-          <p className="text-muted-foreground text-sm">Sistema Inteligente de Monitoramento</p>
+          <p className="text-muted-foreground">Sistema Inteligente de Monitoramento</p>
         </div>
 
         {/* Auth Form */}
-        <Card className="card-daea">
+        <Card className="p-8 shadow-lg border-border/50 bg-card">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-center mb-2">
               {isLogin ? "Entrar" : "Criar Conta"}
@@ -201,7 +203,7 @@ const Auth = () => {
             {/* Submit Button */}
             <Button 
               type="submit" 
-              className="btn-daea w-full py-3"
+              className="w-full py-6 bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-all"
               disabled={loading}
             >
               {loading ? "Processando..." : (isLogin ? "Entrar" : "Criar Conta")}
