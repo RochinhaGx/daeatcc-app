@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDevices } from '@/hooks/useDevices';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import { useToast } from '@/hooks/use-toast';
+import ESP32ConnectionDialog from '@/components/ESP32ConnectionDialog';
 
 const ConfigScreen = () => {
   const { signOut } = useAuth();
@@ -238,6 +239,8 @@ const ConfigScreen = () => {
               <Settings className="mr-2 h-4 w-4" />
               Calibrar Sensores
             </Button>
+
+            <ESP32ConnectionDialog deviceId={currentDevice?.id} />
           </div>
         </div>
       </Card>
