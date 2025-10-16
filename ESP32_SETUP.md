@@ -1,273 +1,295 @@
-# Como Conectar o ESP32 ao Sistema DAEA
+# 🌐 Configuração do ESP32 com WiFi para o App DAEA
 
-## 📋 O que você precisa
+## 📡 Conexão WiFi - Envio Automático de Dados
 
-1. **ESP32** com WiFi
-2. **Sensores conectados:**
-   - Sensor de temperatura (ex: DHT22)
-   - Sensor de umidade (integrado no DHT22)
-   - Sensor de nível de água (ultrassônico ou capacitivo)
-3. **Arduino IDE** instalado
-4. **Bibliotecas necessárias:**
-   - WiFi.h (já vem com ESP32)
-   - HTTPClient.h (já vem com ESP32)
-   - ArduinoJson.h (instalar via Library Manager)
+O ESP32 pode se conectar ao WiFi e enviar dados automaticamente para o app!
 
-## 🔑 Configuração das Credenciais
+## 📋 O Que Você Precisa
 
-1. **API Key do ESP32:** Use a chave que você configurou no secret `ESP32_API_KEY`
-2. **Device ID:** Copie o ID do dispositivo do painel (na aba "Home" ou "Dashboard")
-3. **WiFi:** Nome da sua rede e senha
+1. **Hardware:**
+   - ESP32
+   - Sensor DHT11 (temperatura e umidade do ar)
+   - Sensor de umidade do solo (analógico)
+   - Display LCD I2C 16x2
+   - Conexão WiFi 2.4GHz disponível
 
-## 📡 Endpoint da API
+2. **Software:**
+   - Arduino IDE com suporte para ESP32
+   - Bibliotecas: WiFi.h, HTTPClient.h, Wire.h, LiquidCrystal_I2C.h, DHT.h
 
-```
-URL: https://lhqqbadcqspvhtvfomdp.supabase.co/functions/v1/esp32-data
-Método: POST
-Header: x-esp32-key: [SUA_API_KEY]
-```
+## 🚀 Configuração Passo a Passo
 
-## 💻 Código para o ESP32
+### 1. Obter as Credenciais no App
+
+Antes de programar o ESP32, você precisa:
+
+1. **Criar um dispositivo no app:**
+   - Faça login no app DAEA
+   - Vá para "Configurações"
+   - Anote o **Device ID** do seu dispositivo (exemplo: `550e8400-e29b-41d4-a716-446655440000`)
+
+2. **Obter a API Key:**
+   - A API Key já está configurada no sistema
+   - (Entre em contato com o administrador para obter a chave)
+
+### 2. Configurar o Código do ESP32
+
+Abra o arquivo `ESP32_WIFI_CODE.ino` e modifique estas linhas:
 
 ```cpp
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
+// --- CONFIGURAÇÕES WIFI ---
+const char* ssid = "SEU_WIFI_AQUI";           // Nome da sua rede WiFi
+const char* password = "SUA_SENHA_AQUI";      // Senha da sua rede WiFi
 
-// ===== CONFIGURAÇÕES - ALTERE AQUI =====
-const char* ssid = "SEU_WIFI";              // Nome da sua rede WiFi
-const char* password = "SUA_SENHA_WIFI";    // Senha da sua rede WiFi
-const char* apiKey = "SUA_API_KEY_AQUI";    // API Key do ESP32
-const char* deviceId = "SEU_DEVICE_ID";     // ID do dispositivo do DAEA
-const char* apiUrl = "https://lhqqbadcqspvhtvfomdp.supabase.co/functions/v1/esp32-data";
+// --- CONFIGURAÇÕES DO SERVIDOR ---
+const char* apiKey = "SUA_API_KEY_AQUI";      // API Key do sistema
+const char* deviceId = "SEU_DEVICE_ID_AQUI";  // ID do dispositivo (copie do app)
+```
 
-// ===== CONFIGURAÇÕES DOS SENSORES =====
-#define DHT_PIN 4          // Pino do sensor DHT22
-#define WATER_LEVEL_PIN 34 // Pino do sensor de nível de água (analógico)
+**Exemplo configurado:**
+```cpp
+const char* ssid = "MinhaRedeWiFi";
+const char* password = "minha_senha_123";
+const char* apiKey = "abc123def456";
+const char* deviceId = "550e8400-e29b-41d4-a716-446655440000";
+```
 
-// Intervalo de envio (em milissegundos)
-const unsigned long SEND_INTERVAL = 30000; // 30 segundos
-unsigned long lastSendTime = 0;
+### 3. Instalar Bibliotecas Necessárias
 
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  
-  // Conectar ao WiFi
-  Serial.println();
-  Serial.print("Conectando ao WiFi");
-  WiFi.begin(ssid, password);
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  
-  Serial.println();
-  Serial.println("WiFi conectado!");
-  Serial.print("Endereço IP: ");
-  Serial.println(WiFi.localIP());
-  
-  // Inicializar sensores
-  pinMode(WATER_LEVEL_PIN, INPUT);
-}
+No Arduino IDE:
 
-void loop() {
-  unsigned long currentTime = millis();
-  
-  // Enviar dados a cada SEND_INTERVAL
-  if (currentTime - lastSendTime >= SEND_INTERVAL) {
-    lastSendTime = currentTime;
-    
-    if (WiFi.status() == WL_CONNECTED) {
-      // Ler sensores
-      float temperature = readTemperature();
-      float humidity = readHumidity();
-      float waterLevel = readWaterLevel();
-      float evaporationRate = calculateEvaporationRate(temperature, humidity);
-      
-      // Enviar dados
-      sendSensorData(temperature, humidity, waterLevel, evaporationRate);
-    } else {
-      Serial.println("WiFi desconectado. Tentando reconectar...");
-      WiFi.reconnect();
-    }
-  }
-}
+1. **DHT Sensor Library:**
+   - Vá em **Sketch → Include Library → Manage Libraries**
+   - Procure por "DHT sensor library"
+   - Instale "DHT sensor library" by Adafruit
+   - Instale também "Adafruit Unified Sensor"
 
-// Função para ler temperatura (exemplo com DHT22)
-float readTemperature() {
-  // SUBSTITUA pela leitura real do seu sensor DHT22
-  // Exemplo usando biblioteca DHT:
-  // return dht.readTemperature();
-  
-  // Simulação para teste:
-  return 25.0 + random(-5, 5);
-}
+2. **LiquidCrystal I2C:**
+   - Procure por "LiquidCrystal I2C"
+   - Instale a biblioteca
 
-// Função para ler umidade (exemplo com DHT22)
-float readHumidity() {
-  // SUBSTITUA pela leitura real do seu sensor DHT22
-  // Exemplo usando biblioteca DHT:
-  // return dht.readHumidity();
-  
-  // Simulação para teste:
-  return 60.0 + random(-10, 10);
-}
+3. **WiFi e HTTPClient** já vêm com o ESP32
 
-// Função para ler nível de água
-float readWaterLevel() {
-  // Ler valor analógico (0-4095 no ESP32)
-  int rawValue = analogRead(WATER_LEVEL_PIN);
-  
-  // Converter para porcentagem (0-100%)
-  float waterLevel = map(rawValue, 0, 4095, 0, 100);
-  
-  return waterLevel;
-}
+### 4. Upload para o ESP32
 
-// Função para calcular taxa de evaporação
-float calculateEvaporationRate(float temp, float humidity) {
-  // Fórmula simplificada de evaporação
-  // Taxa aumenta com temperatura e diminui com umidade
-  float rate = (temp / 10.0) * (1.0 - (humidity / 100.0));
-  return rate * 3.0; // Multiplicador para deixar em escala adequada
-}
+1. Conecte o ESP32 ao computador via USB
+2. Abra a Arduino IDE
+3. Selecione a placa: **Tools → Board → ESP32 Arduino → ESP32 Dev Module**
+4. Selecione a porta COM correta
+5. Clique em **Upload**
 
-// Função para enviar dados para a API
-void sendSensorData(float temp, float humidity, float waterLevel, float evapRate) {
-  HTTPClient http;
-  
-  Serial.println("\n=== Enviando dados ===");
-  Serial.printf("Temperatura: %.2f°C\n", temp);
-  Serial.printf("Umidade: %.2f%%\n", humidity);
-  Serial.printf("Nível de água: %.2f%%\n", waterLevel);
-  Serial.printf("Taxa de evaporação: %.2f\n", evapRate);
-  
-  // Configurar requisição HTTP
-  http.begin(apiUrl);
-  http.addHeader("Content-Type", "application/json");
-  http.addHeader("x-esp32-key", apiKey);
-  
-  // Criar JSON com os dados
-  StaticJsonDocument<256> doc;
-  doc["device_id"] = deviceId;
-  doc["temperature"] = temp;
-  doc["humidity"] = humidity;
-  doc["water_level"] = waterLevel;
-  doc["evaporation_rate"] = evapRate;
-  
-  String jsonData;
-  serializeJson(doc, jsonData);
-  
-  Serial.println("JSON enviado:");
-  Serial.println(jsonData);
-  
-  // Enviar requisição POST
-  int httpResponseCode = http.POST(jsonData);
-  
-  if (httpResponseCode > 0) {
-    String response = http.getString();
-    Serial.print("Resposta HTTP: ");
-    Serial.println(httpResponseCode);
-    Serial.println("Resposta do servidor:");
-    Serial.println(response);
-    
-    if (httpResponseCode == 200) {
-      Serial.println("✓ Dados enviados com sucesso!");
-    } else {
-      Serial.println("✗ Erro ao enviar dados");
-    }
-  } else {
-    Serial.print("✗ Erro na requisição HTTP: ");
-    Serial.println(httpResponseCode);
-    Serial.println(http.errorToString(httpResponseCode));
-  }
-  
-  http.end();
+### 5. Verificar Conexão
+
+Após o upload:
+
+1. **Monitor Serial:** Abra o Monitor Serial (115200 baud) para ver os logs
+2. **Display LCD:** Verá "Conectando WiFi" e depois "WiFi OK!" com o IP
+3. **Status de Envio:** O LCD mostra "OK", "ERR" ou "FAIL" no canto inferior direito
+
+## 📊 Como Funciona
+
+O ESP32 faz o seguinte automaticamente:
+
+1. **Conecta ao WiFi** na inicialização
+2. **Lê os sensores** a cada 2 segundos:
+   - Temperatura e umidade do ar (DHT11)
+   - Umidade do solo (sensor analógico)
+3. **Exibe no LCD** os valores atuais
+4. **Envia para o servidor** a cada 10 segundos
+5. **Mostra status** de conexão no LCD
+
+### Dados Enviados
+
+```json
+{
+  "device_id": "550e8400-e29b-41d4-a716-446655440000",
+  "temperature": 25.5,
+  "humidity": 65.2,
+  "water_level": 78.0
 }
 ```
 
-## 🔧 Instalação das Bibliotecas
+**Nota:** O campo `water_level` é usado para a umidade do solo neste caso.
 
-### ArduinoJson
-1. Abra o Arduino IDE
-2. Vá em **Sketch → Include Library → Manage Libraries**
-3. Procure por "ArduinoJson"
-4. Instale a versão 6.x (recomendado)
+## 🔧 Conexões do Hardware
 
-### DHT Sensor Library (se usar DHT22)
-1. No Library Manager, procure por "DHT sensor library"
-2. Instale a biblioteca "DHT sensor library" by Adafruit
-3. Também instale "Adafruit Unified Sensor" que é requerido
+### DHT11 (Temperatura e Umidade):
+- VCC → 3.3V ou 5V
+- GND → GND
+- Data → GPIO 4
 
-## 📝 Passos para Usar
+### Sensor de Umidade do Solo:
+- VCC → 3.3V
+- GND → GND
+- A0 → GPIO 34 (ADC)
 
-1. **Copie o código** acima para o Arduino IDE
-2. **Instale as bibliotecas** necessárias
-3. **Configure as credenciais:**
-   - WiFi (SSID e senha)
-   - API Key do ESP32
-   - Device ID do seu dispositivo DAEA
-4. **Ajuste os pinos** dos sensores conforme seu hardware
-5. **Faça upload** para o ESP32
-6. **Abra o Serial Monitor** (115200 baud) para ver os logs
-7. **Verifique no site** se os dados estão chegando
+### LCD I2C 16x2:
+- VCC → 5V
+- GND → GND
+- SDA → GPIO 21
+- SCL → GPIO 22
 
-## 🔍 Verificação
+## 🔍 Monitoramento
 
-### No Serial Monitor do ESP32:
+### No Monitor Serial
+
+Você verá algo como:
 ```
 Conectando ao WiFi...
 WiFi conectado!
-Endereço IP: 192.168.1.100
-
-=== Enviando dados ===
-Temperatura: 26.50°C
-Umidade: 65.30%
-Nível de água: 78.20%
-Taxa de evaporação: 2.85
-JSON enviado:
-{"device_id":"abc123...","temperature":26.5,"humidity":65.3,...}
-Resposta HTTP: 200
-✓ Dados enviados com sucesso!
+IP: 192.168.1.100
+Temperatura: 25.5 °C | Umidade ar: 65 % | Solo: 78 %
+Enviando dados para o servidor...
+JSON: {"device_id":"550e8400...","temperature":25.50,"humidity":65.00,"water_level":78.00}
+Código de resposta: 200
+Resposta: {"success":true}
 ```
 
-### No Site DAEA:
-1. Vá para a aba **Dashboard** ou **Histórico**
-2. Os dados devem aparecer automaticamente
-3. O status do dispositivo deve mudar para "ligado"
+### No Display LCD
 
-## ⚠️ Troubleshooting
+```
+T:25.5C U:65%
+Solo:78%    OK
+```
+
+**Indicadores de Status:**
+- **OK**: Dados enviados com sucesso (HTTP 200)
+- **ERR**: Erro no envio (código HTTP diferente de 200)
+- **FAIL**: Falha na conexão HTTP
+
+## ❗ Solução de Problemas
 
 ### WiFi não conecta
-- Verifique SSID e senha
-- Certifique-se que o WiFi é 2.4GHz (ESP32 não funciona em 5GHz)
-- Aproxime o ESP32 do roteador
 
-### Erro 401 (Unauthorized)
-- Verifique se a API Key está correta
-- Confirme que o secret `ESP32_API_KEY` foi configurado
+✅ **Verificações:**
+1. SSID está correto (case sensitive)
+2. Senha está correta
+3. WiFi é 2.4GHz (ESP32 não suporta 5GHz)
+4. ESP32 está no alcance do roteador
+5. Tente resetar o ESP32 (botão EN)
 
-### Erro 404 (Device not found)
-- Verifique se o `device_id` está correto
-- Crie um dispositivo no painel DAEA primeiro
+### Dados não aparecem no app
 
-### Dados não aparecem no site
-- Verifique a resposta HTTP no Serial Monitor
-- Confirme que está logado com o usuário correto
-- Recarregue a página do site
+✅ **Verificações:**
+1. **Device ID correto:** Copie do app exatamente
+2. **API Key correta:** Entre em contato com o admin
+3. **Monitor Serial:** Verifique os códigos de resposta HTTP:
+   - `200` = ✅ Sucesso
+   - `401` = 🔑 API Key inválida
+   - `404` = 📱 Device não encontrado
+   - `500` = 🔥 Erro no servidor
+4. **Dispositivo existe:** Crie o device no app primeiro
+
+### Erro ao ler sensores DHT11
+
+✅ **Soluções:**
+- Verifique as conexões (VCC, GND, Data)
+- Adicione resistor pull-up de 10kΩ entre VCC e Data
+- Espere 2 segundos após ligar antes da primeira leitura
+- Verifique se é DHT11 mesmo (não DHT22)
+
+### Sensor de solo sempre retorna 0 ou 4095
+
+✅ **Soluções:**
+- Verifique se está conectado ao GPIO 34 (ADC1)
+- Teste em solo seco vs molhado para ver mudança
+- Inverta os valores se necessário (veja código)
+
+### LCD não aparece nada
+
+✅ **Soluções:**
+- Verifique o endereço I2C (pode ser 0x27 ou 0x3F)
+- No Arduino IDE, use o "I2C Scanner" para descobrir o endereço
+- Ajuste o contraste girando o potenciômetro no LCD
+- Verifique conexões SDA (GPIO 21) e SCL (GPIO 22)
+
+## 🔧 Ajustes Opcionais
+
+### Mudar intervalo de envio
+
+No código, altere (em milissegundos):
+```cpp
+const unsigned long sendInterval = 10000; // 10 segundos
+
+// Para 30 segundos:
+const unsigned long sendInterval = 30000;
+
+// Para 1 minuto:
+const unsigned long sendInterval = 60000;
+```
+
+### Mudar intervalo de leitura dos sensores
+
+No final do `loop()`:
+```cpp
+delay(2000); // 2 segundos
+
+// Para 5 segundos:
+delay(5000);
+```
+
+### Calibrar sensor de solo
+
+Ajuste os valores de mapeamento:
+```cpp
+// Valor atual (4095 = seco, 0 = molhado)
+umidade_percentual = map(umidade_solo, 4095, 0, 0, 100);
+
+// Se estiver invertido, mude para:
+umidade_percentual = map(umidade_solo, 0, 4095, 0, 100);
+
+// Ou ajuste os limites conforme seu sensor:
+umidade_percentual = map(umidade_solo, 3500, 500, 0, 100);
+```
+
+## 📱 Verificando no App
+
+1. Abra o app DAEA
+2. Faça login com seu usuário
+3. O dispositivo deve aparecer com status "ligado"
+4. Veja os dados em tempo real sendo atualizados
+5. Verifique o histórico na aba "Histórico"
+6. Configure alertas na aba "Configurações"
+
+## 📡 Endpoint da API
+
+Para referência:
+```
+URL: https://lhqqbadcqspvhtvfomdp.supabase.co/functions/v1/esp32-data
+Método: POST
+Headers:
+  - Content-Type: application/json
+  - x-esp32-key: [SUA_API_KEY]
+
+Body:
+{
+  "device_id": "string (UUID)",
+  "temperature": number,
+  "humidity": number,
+  "water_level": number,
+  "evaporation_rate": number (opcional)
+}
+```
 
 ## 🎯 Próximos Passos
 
-- Adicione mais sensores conforme necessário
-- Ajuste o intervalo de envio (variável `SEND_INTERVAL`)
-- Implemente reconexão automática ao WiFi
-- Adicione modo deep sleep para economizar bateria
-- Configure alertas no sistema DAEA
+- ✅ ESP32 conectado via WiFi
+- ✅ Dados sendo enviados automaticamente
+- ✅ Monitoramento em tempo real no app
+- ✅ Histórico de leituras salvo no backend
+- 🔔 Configure alertas no app para valores críticos
+- 📈 Analise gráficos de evolução dos dados
+- ⚙️ Ajuste configurações de thresholds
 
 ## 📚 Recursos Adicionais
 
 - [Documentação ESP32](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/)
-- [Biblioteca ArduinoJson](https://arduinojson.org/)
-- [Sensor DHT22](https://learn.adafruit.com/dht)
+- [Arduino IDE para ESP32](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/)
+- [Sensor DHT11](https://learn.adafruit.com/dht)
+- [LCD I2C](https://randomnerdtutorials.com/esp32-esp8266-i2c-lcd-arduino-ide/)
+
+---
+
+**Seu sistema está completo e funcional via WiFi! 🎉**
+
+Agora você tem monitoramento remoto em tempo real dos seus sensores!
