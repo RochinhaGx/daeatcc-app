@@ -2,3 +2,6 @@ project_id = "lhqqbadcqspvhtvfomdp"
 
 [functions.esp32-data]
 verify_jwt = false
+
+[functions.esp32-control]
+verify_jwt = false

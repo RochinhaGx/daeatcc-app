@@ -1,8 +1,8 @@
 # 🌐 Configuração do ESP32 com WiFi para o App DAEA
 
-## 📡 Conexão WiFi - Envio Automático de Dados
+## 📡 Conexão WiFi - Envio Automático de Dados + Controle Remoto
 
-O ESP32 pode se conectar ao WiFi e enviar dados automaticamente para o app!
+O ESP32 se conecta ao WiFi, envia dados automaticamente E permite controle remoto do sistema através do app!
 
 ## 📋 O Que Você Precisa
 
@@ -11,6 +11,7 @@ O ESP32 pode se conectar ao WiFi e enviar dados automaticamente para o app!
    - Sensor DHT11 (temperatura e umidade do ar)
    - Sensor de umidade do solo (analógico)
    - Display LCD I2C 16x2
+   - Relé (opcional - para controlar equipamentos)
    - Conexão WiFi 2.4GHz disponível
 
 2. **Software:**
@@ -91,12 +92,15 @@ Após o upload:
 O ESP32 faz o seguinte automaticamente:
 
 1. **Conecta ao WiFi** na inicialização
-2. **Lê os sensores** a cada 2 segundos:
+2. **Verifica status** do sistema no servidor a cada 5 segundos
+3. **Recebe comandos** remotos (ligar/desligar via app)
+4. **Lê os sensores** a cada 2 segundos:
    - Temperatura e umidade do ar (DHT11)
    - Umidade do solo (sensor analógico)
-3. **Exibe no LCD** os valores atuais
-4. **Envia para o servidor** a cada 10 segundos
-5. **Mostra status** de conexão no LCD
+5. **Exibe no LCD** os valores atuais + status (ON/OFF)
+6. **Controla relé** baseado no status do sistema
+7. **Envia dados para o servidor** a cada 10 segundos (apenas quando ligado)
+8. **Mostra status** de conexão e envio no LCD
 
 ### Dados Enviados
 
@@ -129,33 +133,64 @@ O ESP32 faz o seguinte automaticamente:
 - SDA → GPIO 21
 - SCL → GPIO 22
 
+### Relé (opcional):
+- VCC → 5V
+- GND → GND
+- IN → GPIO 2
+- COM, NO, NC → Equipamento a controlar
+
 ## 🔍 Monitoramento
 
 ### No Monitor Serial
 
-Você verá algo como:
+Você verá logs detalhados como:
 ```
-Conectando ao WiFi...
-WiFi conectado!
-IP: 192.168.1.100
-Temperatura: 25.5 °C | Umidade ar: 65 % | Solo: 78 %
-Enviando dados para o servidor...
-JSON: {"device_id":"550e8400...","temperature":25.50,"humidity":65.00,"water_level":78.00}
-Código de resposta: 200
-Resposta: {"success":true}
+=== DAEA ESP32 Sistema Iniciando ===
+Device ID: dec6c9b8-1ad1-44a6-a798-2bcfd9147817
+✓ Sensor DHT11 inicializado
+✓ LCD inicializado
+
+--- Conectando ao WiFi ---
+SSID: MinhaRedeWiFi
+...
+✓ WiFi conectado com sucesso!
+✓ Endereço IP: 192.168.1.100
+✓ Força do sinal: -45 dBm
+
+--- Verificando status inicial ---
+🔍 Verificando status do sistema...
+✓ Resposta do servidor: {"success":true,"status":"ligado"}
+✓ Sistema LIGADO remotamente!
+
+=== Sistema pronto! ===
+
+📊 T: 25.5°C | U: 65.0% | Solo: 78% | Sistema: LIGADO
+
+📤 Enviando dados para o servidor...
+---
+🌡️  Temperatura: 25.50°C
+💧 Umidade: 65.00%
+🌊 Nível água: 78.00%
+---
+📦 Payload: {"device_id":"dec6c9b8...","temperature":25.50,"humidity":65.00,"water_level":78.00}
+✓ Código HTTP: 200
+✓ Resposta: {"success":true,"message":"Sensor data saved successfully"}
+✓ Dados enviados com sucesso!
 ```
 
 ### No Display LCD
 
 ```
-T:25.5C U:65%
-Solo:78%    OK
+T:25.5C U:65% ON
+Solo:78%     OK
 ```
 
 **Indicadores de Status:**
+- **ON/OFF**: Status do sistema (controlado remotamente)
 - **OK**: Dados enviados com sucesso (HTTP 200)
 - **ERR**: Erro no envio (código HTTP diferente de 200)
 - **FAIL**: Falha na conexão HTTP
+- **WIFI**: Falha na conexão WiFi
 
 ## ❗ Solução de Problemas
 
@@ -242,18 +277,30 @@ umidade_percentual = map(umidade_solo, 0, 4095, 0, 100);
 umidade_percentual = map(umidade_solo, 3500, 500, 0, 100);
 ```
 
-## 📱 Verificando no App
+## 📱 Verificando e Controlando no App
 
-1. Abra o app DAEA
-2. Faça login com seu usuário
-3. O dispositivo deve aparecer com status "ligado"
-4. Veja os dados em tempo real sendo atualizados
-5. Verifique o histórico na aba "Histórico"
-6. Configure alertas na aba "Configurações"
+1. **Abra o app DAEA** e faça login
+2. **Na tela inicial:**
+   - Veja o status do dispositivo (Ligado/Desligado)
+   - Veja as últimas leituras dos sensores
+3. **Na aba "Sensores" (Dashboard):**
+   - **CLIQUE NO BOTÃO para ligar/desligar o sistema remotamente!**
+   - O ESP32 vai detectar a mudança em até 5 segundos
+   - Quando LIGADO, ele envia dados automaticamente
+   - Quando DESLIGADO, ele apenas monitora mas não envia
+4. **Na aba "Histórico":**
+   - Veja todos os dados enviados pelo ESP32
+   - Gráficos de evolução de temperatura, umidade, etc.
+5. **Na aba "Configurações":**
+   - Configure limites de alerta
+   - Ajuste parâmetros do sistema
+   - Veja o Device ID para configurar o ESP32
 
-## 📡 Endpoint da API
+## 📡 Endpoints da API
 
-Para referência:
+Para referência técnica:
+
+### 1. Enviar Dados do ESP32
 ```
 URL: https://lhqqbadcqspvhtvfomdp.supabase.co/functions/v1/esp32-data
 Método: POST
@@ -271,12 +318,33 @@ Body:
 }
 ```
 
-## 🎯 Próximos Passos
+### 2. Verificar Status do Sistema (Novo!)
+```
+URL: https://lhqqbadcqspvhtvfomdp.supabase.co/functions/v1/esp32-control?device_id=[DEVICE_ID]
+Método: GET
+Headers:
+  - x-esp32-key: [SUA_API_KEY]
+
+Response:
+{
+  "success": true,
+  "device_id": "string (UUID)",
+  "device_name": "string",
+  "status": "ligado" | "desligado",
+  "message": "Device is ligado"
+}
+```
+
+## 🎯 Funcionalidades Completas
 
 - ✅ ESP32 conectado via WiFi
-- ✅ Dados sendo enviados automaticamente
+- ✅ **Controle remoto via app (ligar/desligar)**
+- ✅ **ESP32 verifica status a cada 5 segundos**
+- ✅ Dados sendo enviados automaticamente quando ligado
 - ✅ Monitoramento em tempo real no app
 - ✅ Histórico de leituras salvo no backend
+- ✅ Controle de relé via status remoto
+- ✅ Logs detalhados para debug
 - 🔔 Configure alertas no app para valores críticos
 - 📈 Analise gráficos de evolução dos dados
 - ⚙️ Ajuste configurações de thresholds
@@ -290,6 +358,11 @@ Body:
 
 ---
 
-**Seu sistema está completo e funcional via WiFi! 🎉**
+**Seu sistema está completo e funcional via WiFi com controle remoto! 🎉**
 
-Agora você tem monitoramento remoto em tempo real dos seus sensores!
+Agora você tem:
+- ✅ Monitoramento remoto em tempo real
+- ✅ Controle remoto do sistema pelo app
+- ✅ Logs detalhados para depuração
+- ✅ Feedback visual no LCD
+- ✅ Capacidade de controlar equipamentos via relé
