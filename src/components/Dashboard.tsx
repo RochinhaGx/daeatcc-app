@@ -1,24 +1,33 @@
-import React, { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Power, Droplets, Thermometer, Gauge, Zap, Settings, RefreshCw } from 'lucide-react';
-import { useDevices } from '@/hooks/useDevices';
-import { useSensorData } from '@/hooks/useSensorData';
-import { useSystemConfig } from '@/hooks/useSystemConfig';
-import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Power, 
+  Thermometer, 
+  Droplets, 
+  Gauge, 
+  Zap,
+  Activity,
+  AlertCircle,
+  TrendingUp,
+  Waves,
+  CheckCircle2
+} from "lucide-react";
+import { useDevices } from "@/hooks/useDevices";
+import { useSensorData } from "@/hooks/useSensorData";
+import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { toast } from "sonner";
 
 const Dashboard = () => {
   const { devices, loading: devicesLoading, createDevice, toggleDeviceStatus } = useDevices();
   const [currentDevice, setCurrentDevice] = useState<any>(null);
-  const { latestData, simulateSensorData, loading: sensorLoading } = useSensorData(currentDevice?.id);
+  const { latestData, loading: sensorLoading } = useSensorData(currentDevice?.id);
   const { config, createConfig } = useSystemConfig(currentDevice?.id);
-  const { toast } = useToast();
 
   // Initialize device on first load
   useEffect(() => {
     if (!devicesLoading && devices.length === 0) {
-      // Create default device if none exists
       createDevice('DAEA Dispositivo Principal', 'Sistema Principal');
     } else if (devices.length > 0) {
       setCurrentDevice(devices[0]);
@@ -32,187 +41,351 @@ const Dashboard = () => {
     }
   }, [currentDevice, config]);
 
+  const isOnline = currentDevice?.status === 'ligado';
+
   const handleToggleDevice = async () => {
     if (!currentDevice) return;
-    await toggleDeviceStatus(currentDevice.id);
     
-    // Update local state
-    setCurrentDevice(prev => ({
-      ...prev,
-      status: prev.status === 'ligado' ? 'desligado' : 'ligado'
-    }));
-  };
-
-  const handleSimulateReading = async () => {
-    if (!currentDevice) return;
-    
-    if (currentDevice.status === 'desligado') {
-      toast({
-        title: "Sistema Desligado",
-        description: "Ligue o sistema primeiro para simular leituras",
-        variant: "destructive"
-      });
-      return;
+    try {
+      await toggleDeviceStatus(currentDevice.id);
+      toast.success(
+        isOnline ? '✅ Sistema desligado com sucesso' : '🟢 Sistema ligado com sucesso'
+      );
+    } catch (error) {
+      toast.error('❌ Erro ao alterar status do sistema');
+      console.error(error);
     }
-
-    await simulateSensorData(currentDevice.id);
-    toast({
-      title: "Leitura Simulada",
-      description: "Nova leitura dos sensores foi registrada",
-    });
   };
 
-  const isOnline = currentDevice?.status === 'ligado';
+  // Check for alerts
+  const hasAlerts = latestData && config && (
+    (latestData.temperature && (
+      latestData.temperature < config.temperature_alert_min ||
+      latestData.temperature > config.temperature_alert_max
+    )) ||
+    (latestData.humidity && (
+      latestData.humidity < config.humidity_alert_min ||
+      latestData.humidity > config.humidity_alert_max
+    )) ||
+    (latestData.water_level && latestData.water_level > config.water_level_alert)
+  );
 
   if (devicesLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center min-h-[60vh] animate-fade-in">
+        <div className="text-center space-y-4">
+          <Activity className="h-12 w-12 text-muted-foreground mx-auto animate-pulse" />
+          <p className="text-muted-foreground">Carregando dispositivo...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
       {/* Header */}
-      <div className="text-center">
-        <h1 className="text-2xl font-bold mb-2">Painel de Sensores</h1>
-        <p className="text-muted-foreground">Monitoramento em Tempo Real</p>
-        {currentDevice && (
-          <p className="text-sm text-muted-foreground mt-1">{currentDevice.name}</p>
-        )}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Controle do Sistema
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {currentDevice?.name || 'Carregando...'}
+            </p>
+          </div>
+          <Badge 
+            variant={isOnline ? "default" : "secondary"}
+            className="text-sm px-4 py-2 shadow-md"
+          >
+            {isOnline ? (
+              <>
+                <span className="status-dot-online mr-2" />
+                Online
+              </>
+            ) : (
+              <>
+                <span className="status-dot-offline mr-2" />
+                Offline
+              </>
+            )}
+          </Badge>
+        </div>
       </div>
 
-      {/* Status Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="card-daea">
-          <div className="flex items-center space-x-3">
-            <div className="flex-shrink-0">
-              <Power className={`h-6 w-6 ${isOnline ? 'text-green-500' : 'text-muted-foreground'}`} />
+      {/* Alert Card */}
+      {hasAlerts && (
+        <Card className="border-orange-300 bg-gradient-to-br from-orange-50/80 to-orange-100/30 shadow-lg animate-scale-in">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-orange-200/50">
+                <AlertCircle className="h-6 w-6 text-orange-700" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-orange-900 text-lg mb-1">
+                  ⚠️ Atenção Necessária
+                </h3>
+                <p className="text-orange-700">
+                  Alguns parâmetros estão fora dos limites configurados. Verifique as leituras abaixo.
+                </p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">Status</p>
-              <Badge variant={isOnline ? "default" : "secondary"} className="mt-1">
-                {currentDevice?.status === 'ligado' ? 'Ligado' : 'Desligado'}
-              </Badge>
-            </div>
-          </div>
+          </CardContent>
         </Card>
+      )}
 
-        <Card className="card-daea">
-          <div className="flex items-center space-x-3">
-            <div className="flex-shrink-0">
-              <Zap className={`h-6 w-6 ${config?.auto_evaporation ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+      {/* Power Control - Featured Card */}
+      <div 
+        className={`power-toggle ${isOnline ? 'on' : 'off'}`}
+        onClick={handleToggleDevice}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-6">
+          <div className="flex items-center gap-6">
+            <div className={`p-5 rounded-2xl transition-all duration-300 ${
+              isOnline 
+                ? 'bg-success/20 shadow-[0_0_20px_hsl(var(--success)/0.3)]' 
+                : 'bg-muted'
+            }`}>
+              <Power className={`h-12 w-12 transition-colors ${
+                isOnline ? 'text-success' : 'text-muted-foreground'
+              }`} />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">Evaporação</p>
-              <Badge variant="outline" className="mt-1">
-                {config?.auto_evaporation ? 'Automática' : 'Manual'}
-              </Badge>
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                Sistema {isOnline ? 'Ligado' : 'Desligado'}
+              </h2>
+              <p className="text-muted-foreground">
+                {isOnline 
+                  ? '🟢 Monitoramento ativo e funcionando' 
+                  : '⚫ Sistema em standby'
+                }
+              </p>
             </div>
           </div>
-        </Card>
+          <Switch 
+            checked={isOnline}
+            onCheckedChange={handleToggleDevice}
+            className="scale-150"
+          />
+        </div>
       </div>
 
-      {/* Control Button */}
-      <div className="flex justify-center">
-        <Button 
-          size="lg" 
-          className="btn-daea w-full max-w-xs"
-          onClick={handleToggleDevice}
-          disabled={!currentDevice}
-        >
-          <Power className="mr-2 h-5 w-5" />
-          {currentDevice?.status === 'ligado' ? 'Desligar Sistema' : 'Ligar Sistema'}
-        </Button>
+      {/* System Status Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="card-daea-gradient">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Status Operacional
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              {isOnline ? (
+                <>
+                  <CheckCircle2 className="h-8 w-8 text-success" />
+                  <div>
+                    <p className="text-2xl font-bold text-success">Ativo</p>
+                    <p className="text-xs text-muted-foreground">Sistema operando normalmente</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Power className="h-8 w-8 text-muted-foreground" />
+                  <div>
+                    <p className="text-2xl font-bold text-muted-foreground">Inativo</p>
+                    <p className="text-xs text-muted-foreground">Sistema desligado</p>
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="card-daea-gradient">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Waves className="h-4 w-4" />
+              Auto-Evaporação
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-xl ${
+                config?.auto_evaporation 
+                  ? 'bg-primary/20 text-primary' 
+                  : 'bg-muted text-muted-foreground'
+              }`}>
+                <Zap className="h-8 w-8" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {config?.auto_evaporation ? 'Habilitado' : 'Desabilitado'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {config?.auto_evaporation 
+                    ? 'Cálculo automático ativo' 
+                    : 'Modo manual'
+                  }
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Sensor Readings */}
-      <div className="grid grid-cols-1 gap-4">
-        <Card className="card-daea">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Thermometer className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm font-medium">Temperatura</p>
-                <p className="text-2xl font-bold">
-                  {latestData?.temperature ? `${latestData.temperature}°C` : '--°C'}
-                </p>
-              </div>
-            </div>
-            <Badge variant={isOnline ? "default" : "outline"}>
-              {isOnline ? 'Online' : 'Offline'}
-            </Badge>
-          </div>
-        </Card>
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="h-5 w-5 text-primary" />
+          <h2 className="text-xl md:text-2xl font-bold">Leituras dos Sensores</h2>
+        </div>
 
-        <Card className="card-daea">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Droplets className="h-5 w-5 text-cyan-500" />
-              <div>
-                <p className="text-sm font-medium">Umidade</p>
-                <p className="text-2xl font-bold">
-                  {latestData?.humidity ? `${latestData.humidity}%` : '--%'}
-                </p>
-              </div>
-            </div>
-            <Badge variant={isOnline ? "default" : "outline"}>
-              {isOnline ? 'Online' : 'Offline'}
-            </Badge>
+        {sensorLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="pt-6">
+                  <div className="h-24 bg-muted rounded-lg"></div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </Card>
+        ) : latestData ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Temperature */}
+            <Card className="sensor-card-modern group">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 group-hover:scale-110 transition-transform">
+                    <Thermometer className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    Real-time
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Temperatura</p>
+                  <p className="text-3xl font-bold">
+                    {latestData.temperature ? `${latestData.temperature}°C` : '--'}
+                  </p>
+                  {config && latestData.temperature && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Faixa: {config.temperature_alert_min}°C - {config.temperature_alert_max}°C
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="card-daea">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Gauge className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm font-medium">Nível da Água</p>
-                <p className="text-2xl font-bold">
-                  {latestData?.water_level ? `${latestData.water_level}cm` : '--cm'}
-                </p>
-              </div>
-            </div>
-            <Badge variant={isOnline ? "default" : "outline"}>
-              {isOnline ? 'Online' : 'Offline'}
-            </Badge>
-          </div>
-        </Card>
+            {/* Humidity */}
+            <Card className="sensor-card-modern group">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 group-hover:scale-110 transition-transform">
+                    <Droplets className="h-6 w-6 text-cyan-600" />
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    Real-time
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Umidade do Ar</p>
+                  <p className="text-3xl font-bold">
+                    {latestData.humidity ? `${latestData.humidity}%` : '--'}
+                  </p>
+                  {config && latestData.humidity && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Faixa: {config.humidity_alert_min}% - {config.humidity_alert_max}%
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="card-daea">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Zap className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-sm font-medium">Taxa de Evaporação</p>
-                <p className="text-2xl font-bold">
-                  {latestData?.evaporation_rate ? `${latestData.evaporation_rate}mm/h` : '--mm/h'}
+            {/* Water Level */}
+            <Card className="sensor-card-modern group">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10 group-hover:scale-110 transition-transform">
+                    <Gauge className="h-6 w-6 text-green-600" />
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    Real-time
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Nível de Água</p>
+                  <p className="text-3xl font-bold">
+                    {latestData.water_level ? `${latestData.water_level}cm` : '--'}
+                  </p>
+                  {config && latestData.water_level && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Limite: {config.water_level_alert}cm
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Evaporation Rate */}
+            <Card className="sensor-card-modern group">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 group-hover:scale-110 transition-transform">
+                    <Zap className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    Calculado
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Taxa de Evaporação</p>
+                  <p className="text-3xl font-bold">
+                    {latestData.evaporation_rate ? `${latestData.evaporation_rate}mm/h` : '--'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {config?.auto_evaporation ? 'Automático' : 'Manual'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <Card className="border-dashed">
+            <CardContent className="pt-6">
+              <div className="text-center py-12">
+                <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground">
+                  {isOnline 
+                    ? 'Aguardando primeira leitura dos sensores...' 
+                    : 'Ligue o sistema para começar a monitorar'
+                  }
                 </p>
               </div>
-            </div>
-            <Badge variant={isOnline ? "default" : "outline"}>
-              {isOnline ? 'Online' : 'Offline'}
-            </Badge>
-          </div>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <Button 
-          variant="outline" 
-          onClick={handleSimulateReading}
-          disabled={!isOnline}
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Simular Leitura
-        </Button>
-        <Button variant="outline" disabled={!isOnline}>
-          <Settings className="mr-2 h-4 w-4" />
-          Calibrar Sensores
-        </Button>
-      </div>
+      {/* Quick Info */}
+      {latestData && (
+        <Card className="card-daea-highlight">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/20">
+                <Activity className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Sistema Monitorando</p>
+                <p className="text-xs text-muted-foreground">
+                  Última atualização: {new Date(latestData.timestamp).toLocaleString('pt-BR')}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
