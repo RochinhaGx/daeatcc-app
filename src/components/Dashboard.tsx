@@ -22,7 +22,7 @@ import { toast } from "sonner";
 const Dashboard = () => {
   const { devices, loading: devicesLoading, createDevice, toggleDeviceStatus } = useDevices();
   const [currentDevice, setCurrentDevice] = useState<any>(null);
-  const { latestData, loading: sensorLoading } = useSensorData(currentDevice?.id);
+  const { latestData, loading: sensorLoading, simulateSensorData } = useSensorData(currentDevice?.id);
   const { config, createConfig } = useSystemConfig(currentDevice?.id);
 
   // Initialize device on first load
@@ -31,6 +31,10 @@ const Dashboard = () => {
       createDevice('DAEA Dispositivo Principal', 'Sistema Principal');
     } else if (devices.length > 0) {
       setCurrentDevice(devices[0]);
+      // Gerar dados iniciais simulados
+      if (simulateSensorData) {
+        simulateSensorData(devices[0].id);
+      }
     }
   }, [devices, devicesLoading]);
 
@@ -57,18 +61,6 @@ const Dashboard = () => {
     }
   };
 
-  // Check for alerts
-  const hasAlerts = latestData && config && (
-    (latestData.temperature && (
-      latestData.temperature < config.temperature_alert_min ||
-      latestData.temperature > config.temperature_alert_max
-    )) ||
-    (latestData.humidity && (
-      latestData.humidity < config.humidity_alert_min ||
-      latestData.humidity > config.humidity_alert_max
-    )) ||
-    (latestData.water_level && latestData.water_level > config.water_level_alert)
-  );
 
   if (devicesLoading) {
     return (
@@ -113,26 +105,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Alert Card */}
-      {hasAlerts && (
-        <Card className="border-orange-300 bg-gradient-to-br from-orange-50/80 to-orange-100/30 shadow-lg animate-scale-in">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-orange-200/50">
-                <AlertCircle className="h-6 w-6 text-orange-700" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-orange-900 text-lg mb-1">
-                  ⚠️ Atenção Necessária
-                </h3>
-                <p className="text-orange-700">
-                  Alguns parâmetros estão fora dos limites configurados. Verifique as leituras abaixo.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Power Control - Featured Card */}
       <div 

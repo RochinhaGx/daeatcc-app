@@ -84,14 +84,27 @@ export const useSensorData = (deviceId?: string) => {
     }
   };
 
-  // Simular leituras dos sensores para demonstração
+  // Simular leituras dos sensores para demonstração com dados realistas
   const simulateSensorData = async (deviceId: string) => {
+    // Dados do DHT22 - mais realistas
+    const temperature = Math.round((Math.random() * 10 + 22) * 100) / 100; // 22-32°C
+    const humidity = Math.round((Math.random() * 30 + 45) * 100) / 100; // 45-75%
+    
+    // Nível de água em cm (simulando um reservatório)
+    const water_level = Math.round((Math.random() * 50 + 30) * 100) / 100; // 30-80cm
+    
+    // Taxa de evaporação calculada com base na temperatura e umidade
+    // Quanto maior a temperatura e menor a umidade, maior a evaporação
+    const tempFactor = (temperature - 20) / 10; // Normalizado
+    const humidityFactor = (100 - humidity) / 100; // Invertido e normalizado
+    const evaporation_rate = Math.round((tempFactor * 2 + humidityFactor * 3) * 100) / 100; // mm/h
+    
     const readings = {
       device_id: deviceId,
-      temperature: Math.round((Math.random() * 20 + 15) * 100) / 100, // 15-35°C
-      humidity: Math.round((Math.random() * 60 + 30) * 100) / 100, // 30-90%
-      water_level: Math.round((Math.random() * 100) * 100) / 100, // 0-100cm
-      evaporation_rate: Math.round((Math.random() * 5 + 1) * 100) / 100, // 1-6 mm/h
+      temperature,
+      humidity,
+      water_level,
+      evaporation_rate,
     };
 
     return await addSensorReading(readings);
@@ -109,6 +122,15 @@ export const useSensorData = (deviceId?: string) => {
   useEffect(() => {
     if (user) {
       fetchSensorData();
+      
+      // Gerar dados simulados a cada 10 segundos se houver um deviceId
+      if (deviceId) {
+        const interval = setInterval(() => {
+          simulateSensorData(deviceId);
+        }, 10000);
+        
+        return () => clearInterval(interval);
+      }
     }
   }, [user, deviceId]);
 
