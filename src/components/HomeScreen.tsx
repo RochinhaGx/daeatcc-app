@@ -16,7 +16,7 @@ import { useDevices } from '@/hooks/useDevices';
 import { useSensorData } from '@/hooks/useSensorData';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
 import ArduinoConnectionDialog from './ArduinoConnectionDialog';
-import heroImage from '@/assets/esp32-hero.jpg';
+import heroImage from '@/assets/arduino.png';
 
 interface HomeScreenProps {
   onNavigate: (tab: string) => void;
