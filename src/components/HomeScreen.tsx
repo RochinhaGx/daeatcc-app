@@ -15,6 +15,7 @@ import {
 import { useDevices } from '@/hooks/useDevices';
 import { useSensorData } from '@/hooks/useSensorData';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
+import ArduinoConnectionDialog from './ArduinoConnectionDialog';
 import heroImage from '@/assets/esp32-hero.jpg';
 
 interface HomeScreenProps {

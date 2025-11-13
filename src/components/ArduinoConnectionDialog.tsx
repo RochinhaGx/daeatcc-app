@@ -9,23 +9,21 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bluetooth, Wifi, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Bluetooth, CheckCircle2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 
-interface ESP32ConnectionDialogProps {
+interface ArduinoConnectionDialogProps {
   deviceId?: string;
 }
 
-const ESP32ConnectionDialog: React.FC<ESP32ConnectionDialogProps> = ({ deviceId }) => {
+const ArduinoConnectionDialog: React.FC<ArduinoConnectionDialogProps> = ({ deviceId }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionType, setConnectionType] = useState<'bluetooth' | 'wifi' | null>(null);
   const { toast } = useToast();
 
   const handleBluetoothConnect = async () => {
     setIsConnecting(true);
-    setConnectionType('bluetooth');
 
     try {
       // Check if Web Bluetooth API is available
@@ -34,13 +32,16 @@ const ESP32ConnectionDialog: React.FC<ESP32ConnectionDialogProps> = ({ deviceId 
         throw new Error('Web Bluetooth não é suportado neste navegador. Use Chrome, Edge ou Opera.');
       }
 
-      // Request Bluetooth device
+      // Request Bluetooth device - HC-05 aparece como dispositivo serial
       const device = await nav.bluetooth.requestDevice({
         filters: [
-          { namePrefix: 'ESP32' },
-          { namePrefix: 'DAEA' }
+          { namePrefix: 'HC-05' },
+          { namePrefix: 'HC-' },
+          { namePrefix: 'DAEA' },
+          { namePrefix: 'linvor' }, // Algumas versões do HC-05 aparecem com esse nome
+          { name: 'HC-05' }
         ],
-        optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] // Generic UART service UUID
+        optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] // Generic UART service UUID for serial
       });
 
       toast({
@@ -55,10 +56,10 @@ const ESP32ConnectionDialog: React.FC<ESP32ConnectionDialogProps> = ({ deviceId 
         setIsConnected(true);
         toast({
           title: "Conectado!",
-          description: `ESP32 (${device.name}) conectado via Bluetooth`,
+          description: `Arduino (${device.name}) conectado via Bluetooth`,
         });
 
-        // Send device ID to ESP32 if available
+        // Send device ID to Arduino if available
         if (deviceId) {
           try {
             const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
@@ -66,12 +67,12 @@ const ESP32ConnectionDialog: React.FC<ESP32ConnectionDialogProps> = ({ deviceId 
             
             // Send device ID
             const encoder = new TextEncoder();
-            const data = encoder.encode(`DEVICE_ID:${deviceId}`);
+            const data = encoder.encode(`DEVICE_ID:${deviceId}\n`);
             await characteristic.writeValue(data);
             
             toast({
               title: "Configurado",
-              description: "ID do dispositivo enviado ao ESP32"
+              description: "ID do dispositivo enviado ao Arduino"
             });
           } catch (error) {
             console.error('Error sending device ID:', error);
@@ -83,7 +84,7 @@ const ESP32ConnectionDialog: React.FC<ESP32ConnectionDialogProps> = ({ deviceId 
           setIsConnected(false);
           toast({
             title: "Desconectado",
-            description: "ESP32 foi desconectado",
+            description: "Arduino foi desconectado",
             variant: "destructive"
           });
         });
@@ -92,7 +93,7 @@ const ESP32ConnectionDialog: React.FC<ESP32ConnectionDialogProps> = ({ deviceId 
       console.error('Bluetooth connection error:', error);
       toast({
         title: "Erro de conexão",
-        description: error.message || "Não foi possível conectar ao ESP32 via Bluetooth",
+        description: error.message || "Não foi possível conectar ao Arduino via Bluetooth",
         variant: "destructive"
       });
       setIsConnected(false);
@@ -106,39 +107,35 @@ const ESP32ConnectionDialog: React.FC<ESP32ConnectionDialogProps> = ({ deviceId 
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full">
           <Bluetooth className="mr-2 h-4 w-4" />
-          Conectar ESP32
+          Conectar Arduino
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Conectar ao ESP32</DialogTitle>
+          <DialogTitle>Conectar ao Arduino</DialogTitle>
           <DialogDescription>
-            Escolha o método de conexão com seu dispositivo ESP32
+            Conecte seu Arduino Uno com módulo HC-05 via Bluetooth
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="bluetooth" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="bluetooth">
               <Bluetooth className="mr-2 h-4 w-4" />
-              Bluetooth
-            </TabsTrigger>
-            <TabsTrigger value="wifi">
-              <Wifi className="mr-2 h-4 w-4" />
-              WiFi
+              Bluetooth HC-05
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="bluetooth" className="space-y-4">
             <Card className="p-4 space-y-4">
               <div className="space-y-2">
-                <h4 className="font-medium text-sm">Conexão via Bluetooth</h4>
+                <h4 className="font-medium text-sm">Conexão via Bluetooth HC-05</h4>
                 <p className="text-sm text-muted-foreground">
-                  Certifique-se de que o Bluetooth está ativado no ESP32 e no seu dispositivo.
+                  Certifique-se de que o módulo HC-05 está ligado e o LED está piscando.
                 </p>
               </div>
 
-              {isConnected && connectionType === 'bluetooth' ? (
+              {isConnected ? (
                 <div className="flex items-center justify-center p-4 bg-green-50 dark:bg-green-950 rounded-lg">
                   <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
                   <span className="text-green-600 font-medium">Conectado via Bluetooth</span>
@@ -165,58 +162,9 @@ const ESP32ConnectionDialog: React.FC<ESP32ConnectionDialogProps> = ({ deviceId 
 
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>• Navegadores suportados: Chrome, Edge, Opera</p>
-                <p>• O ESP32 deve estar próximo e ligado</p>
-                <p>• Nome do dispositivo deve começar com "ESP32" ou "DAEA"</p>
-              </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="wifi" className="space-y-4">
-            <Card className="p-4 space-y-4">
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">Conexão via WiFi</h4>
-                <p className="text-sm text-muted-foreground">
-                  Configure o ESP32 para se conectar à mesma rede WiFi.
-                </p>
-              </div>
-
-              <div className="space-y-3 text-sm">
-                <div className="space-y-1">
-                  <p className="font-medium">1. Configure o WiFi no ESP32:</p>
-                  <div className="bg-muted p-3 rounded-md font-mono text-xs">
-                    <p>const char* ssid = "SUA_REDE";</p>
-                    <p>const char* password = "SUA_SENHA";</p>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="font-medium">2. Configure a URL da API:</p>
-                  <div className="bg-muted p-3 rounded-md font-mono text-xs break-all">
-                    <p>String apiUrl = "https://lhqqbadcqspvhtvfomdp.supabase.co/functions/v1/esp32-data";</p>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="font-medium">3. Configure a chave de API:</p>
-                  <p className="text-xs text-muted-foreground">
-                    Encontre a chave ESP32_API_KEY no backend do projeto
-                  </p>
-                </div>
-
-                {deviceId && (
-                  <div className="space-y-1">
-                    <p className="font-medium">4. ID do seu dispositivo:</p>
-                    <div className="bg-muted p-3 rounded-md font-mono text-xs break-all">
-                      <p>{deviceId}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-                  <p className="text-xs text-blue-600 dark:text-blue-400">
-                    💡 Consulte o arquivo ESP32_SETUP.md para instruções completas de configuração
-                  </p>
-                </div>
+                <p>• O Arduino deve estar ligado com HC-05 funcionando</p>
+                <p>• O LED do HC-05 deve estar piscando rapidamente</p>
+                <p>• Nome do dispositivo: "HC-05", "DAEA" ou "linvor"</p>
               </div>
             </Card>
           </TabsContent>
@@ -226,4 +174,4 @@ const ESP32ConnectionDialog: React.FC<ESP32ConnectionDialogProps> = ({ deviceId 
   );
 };
 
-export default ESP32ConnectionDialog;
+export default ArduinoConnectionDialog;
