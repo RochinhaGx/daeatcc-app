@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Power, 
   Thermometer, 
@@ -12,11 +13,14 @@ import {
   AlertCircle,
   TrendingUp,
   Waves,
-  CheckCircle2
+  CheckCircle2,
+  Bluetooth,
+  Radio
 } from "lucide-react";
 import { useDevices } from "@/hooks/useDevices";
 import { useSensorData } from "@/hooks/useSensorData";
 import { useSystemConfig } from "@/hooks/useSystemConfig";
+import { useBluetoothConnection } from "@/hooks/useBluetoothConnection";
 import { toast } from "sonner";
 
 const Dashboard = () => {
@@ -24,6 +28,7 @@ const Dashboard = () => {
   const [currentDevice, setCurrentDevice] = useState<any>(null);
   const { latestData, loading: sensorLoading, simulateSensorData } = useSensorData(currentDevice?.id);
   const { config, createConfig } = useSystemConfig(currentDevice?.id);
+  const bluetooth = useBluetoothConnection();
 
   // Initialize device on first load
   useEffect(() => {
@@ -51,6 +56,16 @@ const Dashboard = () => {
     if (!currentDevice) return;
     
     try {
+      // Se Bluetooth conectado, controla via BT
+      if (bluetooth.isConnected) {
+        if (isOnline) {
+          await bluetooth.turnOff();
+        } else {
+          await bluetooth.turnOn();
+        }
+      }
+      
+      // Atualiza no banco também
       await toggleDeviceStatus(currentDevice.id);
       toast.success(
         isOnline ? '✅ Sistema desligado com sucesso' : '🟢 Sistema ligado com sucesso'
@@ -86,25 +101,90 @@ const Dashboard = () => {
               {currentDevice?.name || 'Carregando...'}
             </p>
           </div>
-          <Badge 
-            variant={isOnline ? "default" : "secondary"}
-            className="text-sm px-4 py-2 shadow-md"
-          >
-            {isOnline ? (
-              <>
-                <span className="status-dot-online mr-2" />
-                Online
-              </>
-            ) : (
-              <>
-                <span className="status-dot-offline mr-2" />
-                Offline
-              </>
-            )}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge 
+              variant={isOnline ? "default" : "secondary"}
+              className="text-sm px-4 py-2 shadow-md"
+            >
+              {isOnline ? (
+                <>
+                  <span className="status-dot-online mr-2" />
+                  Online
+                </>
+              ) : (
+                <>
+                  <span className="status-dot-offline mr-2" />
+                  Offline
+                </>
+              )}
+            </Badge>
+            <Button
+              variant={bluetooth.isConnected ? "default" : "outline"}
+              size="sm"
+              onClick={bluetooth.isConnected ? bluetooth.disconnect : bluetooth.connect}
+              disabled={bluetooth.isConnecting}
+            >
+              {bluetooth.isConnecting ? (
+                <>
+                  <Radio className="h-4 w-4 mr-2 animate-pulse" />
+                  Conectando...
+                </>
+              ) : bluetooth.isConnected ? (
+                <>
+                  <Bluetooth className="h-4 w-4 mr-2" />
+                  BT Conectado
+                </>
+              ) : (
+                <>
+                  <Bluetooth className="h-4 w-4 mr-2" />
+                  Conectar BT
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
+
+      {/* Bluetooth Data Card - Show when connected */}
+      {bluetooth.isConnected && bluetooth.latestData && (
+        <Card className="card-daea-gradient border-2 border-primary/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Bluetooth className="h-4 w-4 text-primary animate-pulse" />
+              Dados do Arduino (Bluetooth)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Umidade Solo</p>
+                <p className="text-2xl font-bold text-primary">
+                  {bluetooth.latestData.soilHumidity}%
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Valor Bruto</p>
+                <p className="text-2xl font-bold">
+                  {bluetooth.latestData.rawValue}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Relés</p>
+                <Badge variant={bluetooth.latestData.relayStatus === 'ON' ? 'default' : 'secondary'}>
+                  {bluetooth.latestData.relayStatus === 'ON' ? '🟢 Ligados' : '⚫ Desligados'}
+                </Badge>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Modo</p>
+                <Badge variant={bluetooth.latestData.mode === 'AUTO' ? 'outline' : 'default'}>
+                  {bluetooth.latestData.mode === 'AUTO' ? '🔄 Auto' : '📱 Manual'}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Power Control - Featured Card */}
       <div 
